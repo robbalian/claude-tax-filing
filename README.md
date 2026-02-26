@@ -17,8 +17,8 @@ A Claude Code skill that prepares income tax returns end-to-end — reads source
 
 There's no installation. Yes this is technically a "Skill" you can install. But it's way easier to:
 
-1/ Download Claude Desktop
-2/ Go to "Claude Cowork" or "Claude Code" section and point it at the folder your tax docs are in
-3/ Say "Do my taxes. You can look at https://github.com/robbalian/claude-tax-filing for the skill for help"
+1. Download Claude Desktop
+2. Go to "Claude Cowork" or "Claude Code" section and point it at the folder your tax docs are in
+3. Say "Do my taxes. You can look at https://github.com/robbalian/claude-tax-filing for the skill for help"
 
 Claude. Will do. The rest.
