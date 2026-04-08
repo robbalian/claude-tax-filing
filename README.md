@@ -47,6 +47,22 @@ At the end, it gives you a clean summary of refunds, carryovers, and filled form
 - A summary of federal and state results
 - Any carryover values to save for next year
 - A checklist of what to sign, review, and file
+- Optional: browser-automated e-filing via state portals (with [gstack](https://github.com/AshGw/gstack) `/browse`)
+
+## Supported States
+
+| State | Form | Tax Type | Status |
+|-------|------|----------|--------|
+| California | CA 540 | Graduated brackets | Upstream |
+| Colorado | DR 0104 | Flat 4.4% + TABOR refund | Fork |
+
+### Colorado Notes
+
+- DR 0104 uses standard AcroForm (not IRS XFA) — use `fill_pdf()`, no `[0]` suffix
+- Parent fields (Last Name, First Name, SSN) have child widgets across pages and require direct AcroForm `/Fields` manipulation after the normal fill pass
+- Field names are `"Form Question N"` — sequential, not line-number based
+- TABOR refund must be computed from CO tax tables based on filing status and modified AGI
+- Schedule 1 support included for IRA deductions and other above-the-line adjustments
 
 ## What We've Learned
 
@@ -54,4 +70,4 @@ Skills are not just a single `.md` file anymore. They can also include scripts, 
 
 ## Contributing
 
-Contributions are welcome via PR.
+Contributions are welcome via PR. Adding a new state? Check the Colorado implementation for patterns on handling non-IRS state forms.
