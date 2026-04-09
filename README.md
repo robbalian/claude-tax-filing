@@ -47,7 +47,7 @@ At the end, it gives you a clean summary of refunds, carryovers, and filled form
 - A summary of federal and state results
 - Any carryover values to save for next year
 - A checklist of what to sign, review, and file
-- Optional: browser-automated e-filing via state portals (with [gstack](https://github.com/AshGw/gstack) `/browse`)
+- Filing instructions and next steps
 
 ## Supported States
 
@@ -58,11 +58,10 @@ At the end, it gives you a clean summary of refunds, carryovers, and filled form
 
 ### Colorado Notes
 
-- DR 0104 uses standard AcroForm (not IRS XFA) — use `fill_pdf()`, no `[0]` suffix
-- Parent fields (Last Name, First Name, SSN) have child widgets across pages and require direct AcroForm `/Fields` manipulation after the normal fill pass
-- Field names are `"Form Question N"` — sequential, not line-number based
-- TABOR refund must be computed from CO tax tables based on filing status and modified AGI
-- Schedule 1 support included for IRA deductions and other above-the-line adjustments
+- Flat 4.4% tax rate applied to federal taxable income with additions/subtractions
+- Includes TABOR refund computation (lookup by filing status and modified AGI)
+- DR 0104AD (additions/subtractions schedule) included when applicable
+- See SKILL.md Key Gotchas for PDF-filling implementation details
 
 ## What We've Learned
 

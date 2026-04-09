@@ -31,7 +31,8 @@ working_dir/
     f8949_fields.json
     f1040sd_fields.json
     ca540_fields.json  ← (CA filers)
-    dr0104_fields.json ← (CO filers)
+    dr0104_fields.json  ← (CO filers)
+    dr0104ad_fields.json ← (CO filers with additions/subtractions)
     expected_*.json    ← verification expected values
   forms/               ← blank downloaded PDF forms
     f1040_blank.pdf
@@ -40,6 +41,7 @@ working_dir/
     f1040sd_blank.pdf
     ca540_blank.pdf    ← (CA filers)
     dr0104_blank.pdf   ← (CO filers)
+    dr0104ad_blank.pdf ← (CO filers with additions/subtractions)
   output/              ← final filled PDFs + fill script
     fill_YEAR.py       ← the fill script
     f1040_filled.pdf
@@ -48,6 +50,7 @@ working_dir/
     f1040sd_filled.pdf
     ca540_filled.pdf   ← (CA filers)
     dr0104_filled.pdf  ← (CO filers)
+    dr0104ad_filled.pdf ← (CO filers with additions/subtractions)
 ```
 
 Create these folders at the start. Keep the working directory clean — no loose files.
@@ -135,16 +138,26 @@ If the filer has above-the-line adjustments (Traditional IRA deduction, student 
 
 #### CO Form DR 0104
 
-1. Start with federal taxable income (1040 Line 15)
-2. Add Colorado additions:
-   - State income tax addback (Line 2) — only if itemizing
-   - Standard deduction addback (Line 4) — only if AGI > $300K single / $350K MFJ
-3. Subtract Colorado subtractions (DR 0104AD) — retirement income, 529, charitable
-4. Colorado taxable income × **4.4%** = Colorado tax (Line 13)
-5. Subtract credits → Net tax (Line 23)
-6. Add withholding (W-2 Box 17) → Total payments (Line 33)
-7. Compute TABOR refund (Line 38) — lookup by filing status and modified AGI
-8. Total (Line 33 + Line 38) − Net tax → CO Refund/Owed
+**Additions (Lines 2–9):**
+- Line 2: State income tax addback (only if itemizing)
+- Line 4: Standard deduction addback (only if AGI > $300K single / $350K MFJ)
+- Lines 5–9: Other additions (business meals, CollegeInvest, CO ABLE, etc.)
+
+**Subtractions (DR 0104AD → Line 11):**
+- Retirement income, 529 contributions, excess charitable — flow to DR 0104 Line 11
+
+**Tax computation:**
+- Line 10: Subtotal (federal taxable income + additions)
+- Line 12: CO taxable income (Line 10 − Line 11)
+- Line 13: CO tax = Line 12 × **4.4%**
+- Lines 14–23: AMT, recapture, credits → Net tax
+
+**Payments & refund:**
+- Line 24: CO withholding (W-2 Box 17)
+- Line 33: Total payments
+- Lines 34–38: TABOR refund — lookup by filing status and modified AGI
+- Line 39: Total (Line 33 + Line 38)
+- Line 40–42: Overpayment → CO Refund
 
 ### Step 7: Download Blank PDF Forms
 
@@ -160,7 +173,7 @@ https://www.irs.gov/pub/irs-prior/f1040sd--YEAR.pdf
 
 **CA**: `ftb.ca.gov/forms/YEAR/` for state forms.
 
-**CO**: Download DR 0104 from `tax.colorado.gov` (search for "DR 0104" — URL structure varies by year).
+**CO**: Download DR 0104 and DR 0104AD from `tax.colorado.gov` (search for "DR 0104" — URL structure varies by year).
 
 Verify each download has `%PDF-` header (not an HTML error page).
 
@@ -174,7 +187,8 @@ python scripts/discover_fields.py forms/f1040s1_blank.pdf --compact > work/f1040
 python scripts/discover_fields.py forms/f8949_blank.pdf --compact > work/f8949_fields.json
 python scripts/discover_fields.py forms/f1040sd_blank.pdf --compact > work/f1040sd_fields.json
 python scripts/discover_fields.py forms/ca540_blank.pdf --compact > work/ca540_fields.json   # CA
-python scripts/discover_fields.py forms/dr0104_blank.pdf --compact > work/dr0104_fields.json # CO
+python scripts/discover_fields.py forms/dr0104_blank.pdf --compact > work/dr0104_fields.json   # CO
+python scripts/discover_fields.py forms/dr0104ad_blank.pdf --compact > work/dr0104ad_fields.json # CO
 ```
 
 `--compact` outputs a minimal `{field_name: description}` mapping — each field name is paired with its tooltip/speak description so you can map line numbers to field names directly without manual inspection. Radio buttons include their option values (e.g. `{"/2": "Single", "/1": "MFJ"}`).
@@ -197,6 +211,8 @@ Output filled PDFs to `output/`.
 
 ```bash
 python scripts/verify_filled.py output/f1040_filled.pdf work/expected_f1040.json
+python scripts/verify_filled.py output/dr0104_filled.pdf work/expected_dr0104.json     # CO
+python scripts/verify_filled.py output/dr0104ad_filled.pdf work/expected_dr0104ad.json # CO
 ```
 
 Fix any failures, re-run fill script.
@@ -209,16 +225,6 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - **Payment instructions** (if owed) — IRS Direct Pay, FTB Web Pay, deadline April 15
 - **Direct deposit** — recommend it for refunds; ask for bank info if not provided
 - **Filing options** — e-file (Free File, CalFile, Revenue Online) or mailing addresses
-
-### E-Filing with Browser Automation
-
-If the user has a headless browser skill (e.g., gstack `/browse`), you can navigate state e-filing portals directly:
-
-1. **Colorado Revenue Online** (`colorado.gov/revenueonline`): Navigate to "File an Individual Income Tax Return", log in (use `handoff` for auth), then fill each form field using the computed values from `work/computations.txt`. Use `snapshot -i` to discover form fields, `fill` to enter values, and `snapshot -D` to verify changes.
-
-2. **IRS Direct File** or **Free File**: Navigate to the IRS e-filing portal, use `handoff` for identity verification, then fill fields from computed values.
-
-Use `handoff` whenever you hit authentication, CAPTCHA, or identity verification steps — hand control to the user, then `resume` to continue filling.
 
 ## Key Gotchas
 
@@ -244,5 +250,11 @@ Use `handoff` whenever you hit authentication, CAPTCHA, or identity verification
 - **Schedule D**: Some fields have `_RO` suffix (read-only) — skip those.
 - **Schedule 1**: Needed for IRA deductions, student loan interest, HSA, and other above-the-line adjustments. Line 26 total flows to 1040 Line 10.
 - **CA 540**: Field names are `540-PPNN` (page+sequence, NOT line numbers). Checkboxes end with `" CB"`, radio buttons use named AP keys.
-- **CO DR 0104**: Uses `fill_pdf()` (standard AcroForm, NOT IRS XFA — no `[0]` suffix). Field names are `"Form Question N"` (sequential, not line numbers). **Parent fields with Kids**: `Last Name`, `First Name`, `Social Security Number` have child widgets on each page — `update_page_form_field_values` won't set them. After filling, walk the `/AcroForm` → `/Fields` array and set `/V` on matching parent fields directly using `NameObject`/`TextStringObject`. Radio buttons: `RB1` = filing status, `RB6` = checking/savings. TABOR refund amount must be looked up from CO tax tables by filing status and modified AGI.
+- **CO DR 0104**:
+  - Uses `fill_pdf()` (standard AcroForm, NOT IRS XFA — no `[0]` suffix)
+  - Field names are `"Form Question N"` (sequential, not line numbers)
+  - **Parent fields with Kids**: `Last Name`, `First Name`, `Social Security Number` have child widgets on each page — `update_page_form_field_values` won't set them. After filling, walk `/AcroForm` → `/Fields` and set `/V` on parent fields directly using `NameObject`/`TextStringObject`
+  - Radio buttons: `RB1` = filing status, `RB6` = checking/savings
+  - TABOR refund must be looked up from CO tax tables by filing status and modified AGI
+- **CO DR 0104AD**: Additions/subtractions schedule. Same AcroForm approach as DR 0104. Subtraction total flows to DR 0104 Line 11.
 - **Downloads**: Prior-year IRS = `irs.gov/pub/irs-prior/`, current = `irs.gov/pub/irs-pdf/`
