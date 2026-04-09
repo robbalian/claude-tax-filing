@@ -27,21 +27,30 @@ working_dir/
     tax_data.txt       ← extracted figures from source docs
     computations.txt   ← all tax math (federal, state, capital gains)
     f1040_fields.json  ← field discovery dumps
+    f1040s1_fields.json
     f8949_fields.json
     f1040sd_fields.json
-    ca540_fields.json
+    ca540_fields.json  ← (CA filers)
+    dr0104_fields.json  ← (CO filers)
+    dr0104ad_fields.json ← (CO filers with additions/subtractions)
     expected_*.json    ← verification expected values
   forms/               ← blank downloaded PDF forms
     f1040_blank.pdf
+    f1040s1_blank.pdf  ← Schedule 1 (if adjustments exist)
     f8949_blank.pdf
     f1040sd_blank.pdf
-    ca540_blank.pdf
+    ca540_blank.pdf    ← (CA filers)
+    dr0104_blank.pdf   ← (CO filers)
+    dr0104ad_blank.pdf ← (CO filers with additions/subtractions)
   output/              ← final filled PDFs + fill script
     fill_YEAR.py       ← the fill script
     f1040_filled.pdf
+    f1040s1_filled.pdf
     f8949_filled.pdf
     f1040sd_filled.pdf
-    ca540_filled.pdf
+    ca540_filled.pdf   ← (CA filers)
+    dr0104_filled.pdf  ← (CO filers)
+    dr0104ad_filled.pdf ← (CO filers with additions/subtractions)
 ```
 
 Create these folders at the start. Keep the working directory clean — no loose files.
@@ -80,6 +89,7 @@ Save all extracted figures to `work/tax_data.txt` immediately — one section pe
 - Standard vs. itemized deduction preference
 - Digital asset / cryptocurrency transactions (Yes/No) — stock trades are NOT digital assets
 - Health coverage status (for CA)
+- Traditional/Roth IRA contributions (for Schedule 1 deduction)
 - Any estimated tax payments made
 - Any other credits or adjustments
 
@@ -87,9 +97,10 @@ Save all extracted figures to `work/tax_data.txt` immediately — one section pe
 
 ### Step 3: Look Up Year-Specific Values
 
-Research from IRS.gov and FTB.ca.gov:
+Research from IRS.gov and the state tax authority:
 - Federal tax brackets, standard deduction, QDCG 0%/15%/20% thresholds
-- State tax brackets, standard deduction, personal exemption credit
+- **CA**: State tax brackets, standard deduction, personal exemption credit (FTB.ca.gov)
+- **CO**: Flat tax rate (4.4% for 2025), TABOR refund thresholds (tax.colorado.gov)
 
 Save to `work/computations.txt`.
 
@@ -105,17 +116,48 @@ Save to `work/computations.txt`.
 
 Save all line values to `work/computations.txt`.
 
+### Step 4b: Compute Schedule 1 (if adjustments exist)
+
+If the filer has above-the-line adjustments (Traditional IRA deduction, student loan interest, HSA, etc.):
+1. Part II — list each adjustment with amount
+2. Line 26 total → 1040 Line 10
+
 ### Step 5: Compute Capital Gains (if applicable)
 
 1. Form 8949: individual transactions (Part I short-term, Part II long-term)
 2. Schedule D: totals, $3,000 loss limitation, carryover calculation
 3. Net gain/loss → 1040 Line 7
 
-### Step 6: Compute State Return (CA Form 540)
+### Step 6: Compute State Return
+
+#### CA Form 540
 
 1. Federal AGI → CA adjustments → CA taxable income
 2. Tax from brackets − exemption credits → total tax
 3. Withholding → Refund/Owed
+
+#### CO Form DR 0104
+
+**Additions (Lines 2–9):**
+- Line 2: State income tax addback (only if itemizing)
+- Line 4: Standard deduction addback (only if AGI > $300K single / $350K MFJ)
+- Lines 5–9: Other additions (business meals, CollegeInvest, CO ABLE, etc.)
+
+**Subtractions (DR 0104AD → Line 11):**
+- Retirement income, 529 contributions, excess charitable — flow to DR 0104 Line 11
+
+**Tax computation:**
+- Line 10: Subtotal (federal taxable income + additions)
+- Line 12: CO taxable income (Line 10 − Line 11)
+- Line 13: CO tax = Line 12 × **4.4%**
+- Lines 14–23: AMT, recapture, credits → Net tax
+
+**Payments & refund:**
+- Line 24: CO withholding (W-2 Box 17)
+- Line 33: Total payments
+- Lines 34–38: TABOR refund — lookup by filing status and modified AGI
+- Line 39: Total (Line 33 + Line 38)
+- Line 40–42: Overpayment → CO Refund
 
 ### Step 7: Download Blank PDF Forms
 
@@ -124,11 +166,14 @@ Save to `forms/` directory.
 **IRS**: Use `/irs-prior/` for prior-year forms (`/irs-pdf/` is always current year):
 ```
 https://www.irs.gov/pub/irs-prior/f1040--YEAR.pdf
+https://www.irs.gov/pub/irs-prior/f1040s1--YEAR.pdf
 https://www.irs.gov/pub/irs-prior/f8949--YEAR.pdf
 https://www.irs.gov/pub/irs-prior/f1040sd--YEAR.pdf
 ```
 
 **CA**: `ftb.ca.gov/forms/YEAR/` for state forms.
+
+**CO**: Download DR 0104 and DR 0104AD from `tax.colorado.gov` (search for "DR 0104" — URL structure varies by year).
 
 Verify each download has `%PDF-` header (not an HTML error page).
 
@@ -138,9 +183,12 @@ Verify each download has `%PDF-` header (not an HTML error page).
 
 ```bash
 python scripts/discover_fields.py forms/f1040_blank.pdf --compact > work/f1040_fields.json
+python scripts/discover_fields.py forms/f1040s1_blank.pdf --compact > work/f1040s1_fields.json
 python scripts/discover_fields.py forms/f8949_blank.pdf --compact > work/f8949_fields.json
 python scripts/discover_fields.py forms/f1040sd_blank.pdf --compact > work/f1040sd_fields.json
-python scripts/discover_fields.py forms/ca540_blank.pdf --compact > work/ca540_fields.json
+python scripts/discover_fields.py forms/ca540_blank.pdf --compact > work/ca540_fields.json   # CA
+python scripts/discover_fields.py forms/dr0104_blank.pdf --compact > work/dr0104_fields.json   # CO
+python scripts/discover_fields.py forms/dr0104ad_blank.pdf --compact > work/dr0104ad_fields.json # CO
 ```
 
 `--compact` outputs a minimal `{field_name: description}` mapping — each field name is paired with its tooltip/speak description so you can map line numbers to field names directly without manual inspection. Radio buttons include their option values (e.g. `{"/2": "Single", "/1": "MFJ"}`).
@@ -155,7 +203,7 @@ Write `output/fill_YEAR.py` using `scripts/fill_forms.py`:
 
 - **`add_suffix(d)`** — appends `[0]` to text field keys. Required for IRS forms.
 - **`fill_irs_pdf(in, out, fields, checkboxes, radio_values)`** — IRS forms. `radio_values` for filing status, yes/no, checking/savings.
-- **`fill_pdf(in, out, fields, checkboxes)`** — CA forms. Matches by `/Parent` chain + `/AP/N` keys.
+- **`fill_pdf(in, out, fields, checkboxes)`** — State forms (CA, CO). Matches by `/Parent` chain + `/AP/N` keys.
 
 Output filled PDFs to `output/`.
 
@@ -163,6 +211,8 @@ Output filled PDFs to `output/`.
 
 ```bash
 python scripts/verify_filled.py output/f1040_filled.pdf work/expected_f1040.json
+python scripts/verify_filled.py output/dr0104_filled.pdf work/expected_dr0104.json     # CO
+python scripts/verify_filled.py output/dr0104ad_filled.pdf work/expected_dr0104ad.json # CO
 ```
 
 Fix any failures, re-run fill script.
@@ -174,7 +224,7 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - **Sign your returns** — unsigned returns are rejected
 - **Payment instructions** (if owed) — IRS Direct Pay, FTB Web Pay, deadline April 15
 - **Direct deposit** — recommend it for refunds; ask for bank info if not provided
-- **Filing options** — e-file (Free File, CalFile) or mailing addresses
+- **Filing options** — e-file (Free File, CalFile, Revenue Online) or mailing addresses
 
 ## Key Gotchas
 
@@ -198,5 +248,13 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - **1040**: First few fields (`f1_01`-`f1_03`) are fiscal year headers, not name fields. SSN = 9 digits, no dashes. Digital assets = crypto only, not stocks.
 - **8949**: Box A/B/C checkboxes are 3-way radio buttons. Totals at high field numbers (e.g. `f1_115`-`f1_119`), not after last data row. Schedule D lines 1b/8b (from 8949), not 1a/8a.
 - **Schedule D**: Some fields have `_RO` suffix (read-only) — skip those.
+- **Schedule 1**: Needed for IRA deductions, student loan interest, HSA, and other above-the-line adjustments. Line 26 total flows to 1040 Line 10.
 - **CA 540**: Field names are `540-PPNN` (page+sequence, NOT line numbers). Checkboxes end with `" CB"`, radio buttons use named AP keys.
+- **CO DR 0104**:
+  - Uses `fill_pdf()` (standard AcroForm, NOT IRS XFA — no `[0]` suffix)
+  - Field names are `"Form Question N"` (sequential, not line numbers)
+  - **Parent fields with Kids**: `Last Name`, `First Name`, `Social Security Number` have child widgets on each page — `update_page_form_field_values` won't set them. After filling, walk `/AcroForm` → `/Fields` and set `/V` on parent fields directly using `NameObject`/`TextStringObject`
+  - Radio buttons: `RB1` = filing status, `RB6` = checking/savings
+  - TABOR refund must be looked up from CO tax tables by filing status and modified AGI
+- **CO DR 0104AD**: Additions/subtractions schedule. Same AcroForm approach as DR 0104. Subtraction total flows to DR 0104 Line 11.
 - **Downloads**: Prior-year IRS = `irs.gov/pub/irs-prior/`, current = `irs.gov/pub/irs-pdf/`

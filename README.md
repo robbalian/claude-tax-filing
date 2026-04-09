@@ -47,6 +47,21 @@ At the end, it gives you a clean summary of refunds, carryovers, and filled form
 - A summary of federal and state results
 - Any carryover values to save for next year
 - A checklist of what to sign, review, and file
+- Filing instructions and next steps
+
+## Supported States
+
+| State | Form | Tax Type | Status |
+|-------|------|----------|--------|
+| California | CA 540 | Graduated brackets | Upstream |
+| Colorado | DR 0104 | Flat 4.4% + TABOR refund | Fork |
+
+### Colorado Notes
+
+- Flat 4.4% tax rate applied to federal taxable income with additions/subtractions
+- Includes TABOR refund computation (lookup by filing status and modified AGI)
+- DR 0104AD (additions/subtractions schedule) included when applicable
+- See SKILL.md Key Gotchas for PDF-filling implementation details
 
 ## What We've Learned
 
@@ -54,4 +69,4 @@ Skills are not just a single `.md` file anymore. They can also include scripts, 
 
 ## Contributing
 
-Contributions are welcome via PR.
+Contributions are welcome via PR. Adding a new state? Check the Colorado implementation for patterns on handling non-IRS state forms.
