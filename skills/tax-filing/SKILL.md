@@ -111,6 +111,8 @@ Save all line values to `work/computations.txt`.
 2. Schedule D: totals, $3,000 loss limitation, carryover calculation
 3. Net gain/loss → 1040 Line 7
 
+**Rounding rule**: Form 8949 and Schedule D must use **exact cents** matching the 1099-B / 1099-DA source documents. Only Form 1040 rounds to the nearest whole dollar (Line 7 = round of Schedule D Line 16). Do NOT round amounts on 8949 or Schedule D.
+
 ### Step 6: Compute State Return (CA Form 540)
 
 1. Federal AGI → CA adjustments → CA taxable income
@@ -176,6 +178,29 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - **Direct deposit** — recommend it for refunds; ask for bank info if not provided
 - **Filing options** — e-file (Free File, CalFile) or mailing addresses
 
+### Step 11: MFJ vs Single Comparison (if Married Filing Jointly)
+
+After completing the MFJ return, compute what each spouse would owe if they filed Single instead. This helps the couple understand the tax impact of their filing status choice.
+
+For each spouse, compute a hypothetical Single return:
+1. **Income**: Use only that spouse's W-2, 1099-INT, 1099-DIV, and 1099-B/1099-DA
+2. **Standard deduction**: Single amount (typically half of MFJ)
+3. **QBI deduction**: Based on that spouse's 199A dividends only
+4. **Tax**: Use Single brackets and QDCG worksheet with Single 0%/15%/20% thresholds
+5. **Credits**: Foreign tax credit only if that spouse paid foreign tax
+6. **Additional Medicare Tax**: Use the $200K Single threshold (not $250K MFJ)
+7. **Withholding**: That spouse's W-2 Box 2 only
+
+Present a side-by-side comparison table:
+
+| | MFJ (actual) | Both Single | Difference |
+|--|-------------|-------------|------------|
+| Combined tax | | | |
+| Combined withheld | | | |
+| **Combined owed** | | | |
+
+Include key takeaways — especially the Additional Medicare Tax threshold difference ($250K MFJ vs $200K Single per spouse), which is often the largest driver of the MFJ vs Single gap.
+
 ## Key Gotchas
 
 ### Context
@@ -193,6 +218,11 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - Checkboxes: set both `/V` and `/AS` to `/1` or `/Off`
 - IRS fields need `[0]` suffix — use `add_suffix()`
 - IRS checkboxes match by `/T` directly; radio groups match by `/AP/N` key via `radio_values`
+
+### Rounding
+- **Form 8949 & Schedule D**: Report **exact cents** (e.g. "11.36", "-240.00") to match 1099-B / 1099-DA source documents. Never round these.
+- **Form 1040**: Round all amounts to the **nearest whole dollar** per IRS instructions. Line 7 (capital gain) = nearest-dollar rounding of Schedule D Line 16.
+- **CA 540**: Round to nearest whole dollar.
 
 ### Form-Specific
 - **1040**: First few fields (`f1_01`-`f1_03`) are fiscal year headers, not name fields. SSN = 9 digits, no dashes. Digital assets = crypto only, not stocks.
