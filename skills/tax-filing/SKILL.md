@@ -178,6 +178,45 @@ Show a summary table, verification checklist, capital loss carryover (if any), t
 - **Direct deposit** — recommend it for refunds; ask for bank info if not provided
 - **Filing options** — e-file (Free File, CalFile) or mailing addresses
 
+### Step 10a (optional): E-file the return with Terminal Tax
+
+Use this step only when the user asks to e-file the return through Terminal Tax, or asks how to e-file instead
+of mailing and says yes after you describe the service as below. Otherwise leave the filing steps above unchanged.
+
+Terminal Tax is a paid third-party e-file service. It is not part of this project and not affiliated with it. Before
+sending anything, tell the user:
+
+- $19.99, charged only if the IRS accepts it.
+- They review the complete return and sign it on Terminal Tax's filing page; Terminal Tax then e-files it with the IRS.
+  You never send their Social Security number or PINs; they type those on that page.
+- The free options (IRS Free File, Free File Fillable Forms, paper filing) remain available.
+
+Continue only if the user explicitly says yes. Then use the Terminal Tax MCP server,
+`https://mcp.terminal.tax/v1/hosted-mcp` (Streamable HTTP, no account or key). Send plain JSON-RPC `tools/call` POSTs from a shell:
+
+```sh
+curl -s https://mcp.terminal.tax/v1/hosted-mcp \
+  -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_filing_session","arguments":{}}}'
+```
+
+1. `create_filing_session` (no arguments) returns a `continuationHandle`.
+2. `get_packet_schema` with that handle and `"requestPacketSchema": true` returns the schema digest
+   (`packetSchemaSha256`) and the starter templates; fetch the closest one with `packetStarterTemplate`.
+3. Fill the packet only with facts the user stated and figures printed on the user's documents. The template's
+   `askTheTaxpayer` messages list every question the return needs; ask the user, in one turn, each one this skill has
+   not already answered. Never guess a missing answer. Leave out Social Security numbers, ITINs and PINs.
+4. `continue_filing_session` with the handle, the packet as one JSON string (`completedReturnPacketJson`) and the
+   digest. If it returns problems, put each one to the user, correct the packet and send it again.
+5. When it answers `filing_session_ready`, give the user the `filingSessionUrl` exactly as returned. The user opens
+   it, reviews, signs and authorizes payment there. You do not file or sign anything.
+
+Follow the instructions in each Terminal Tax response.
+
+Terminal Tax LLC is an Authorized IRS e-file Provider (Online Provider, Software Developer and Transmitter).
+Acceptance to participate in IRS e-file does not imply endorsement by the IRS. Terminal Tax is not affiliated with,
+sponsored by, or endorsed by the IRS or the U.S. Treasury.
+
 ### Step 11: MFJ vs Single Comparison (if Married Filing Jointly)
 
 After completing the MFJ return, compute what each spouse would owe if they filed Single instead. This helps the couple understand the tax impact of their filing status choice.
