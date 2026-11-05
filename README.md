@@ -54,12 +54,7 @@ Skills are not just a single `.md` file anymore. They can also include scripts, 
 
 ## Optional: e-file with Terminal Tax
 
-If your federal return is an original tax year 2025 Form 1040 or 1040-SR and you would rather e-file it than mail it,
-you can ask the assistant to hand the finished return to Terminal Tax, a paid third-party e-file service. The
-assistant describes the service and sends nothing unless you say yes. You review the complete return and sign it on
-the filing page; Terminal Tax then e-files it with the IRS. Your assistant never needs your Social Security number or
-PINs. $19.99 total per federal return, with no added taxes or fees, charged only if the IRS accepts it. It files no
-state return. Everything else here, including the free filing options and paper filing, is unchanged.
+Let ChatGPT or Claude file your taxes directly with the IRS. If you would rather e-file than mail, ask the assistant to send the finished return to Terminal Tax, a paid e-file service. Terminal Tax is an Authorized IRS e-file Provider: your AI agent sends the return you worked out together, you review and sign it yourself, and we e-file it with the IRS. Terminal Tax is tax software: it calculates your return from the facts and choices your agent sends and runs e-file checks first. Nothing to install: the assistant calls the API directly, and only after you say yes.
 
 This project is not affiliated with Terminal Tax LLC. Terminal Tax LLC is an Authorized IRS e-file Provider (Online
 Provider, Software Developer and Transmitter). Acceptance to participate in IRS e-file does not imply endorsement by
